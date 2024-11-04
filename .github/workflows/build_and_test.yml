@@ -2,8 +2,8 @@ name: Pamplejuce
 
 on:
   workflow_dispatch: # lets you run a build from the UI
-  push:
-  pull_request:
+#  push:
+#  pull_request:
 
 # When pushing new commits, cancel any running builds on that branch
 concurrency:
@@ -16,8 +16,7 @@ env:
   DISPLAY: :0 # linux pluginval needs this
   HOMEBREW_NO_INSTALL_CLEANUP: 1
   SCCACHE_GHA_ENABLED: true
-  SCCACHE_CACHE_MULTIARCH: 1
-  IPP_DIR: C:\Program Files (x86)\Intel\oneAPI\ipp\latest\lib\cmake\ipp
+#  IPP_DIR: C:\Program Files (x86)\Intel\oneAPI\ipp\latest\lib\cmake\ipp
 
 defaults:
   run:
@@ -35,9 +34,10 @@ jobs:
       fail-fast: false # show all errors for each platform (vs. cancel jobs on error)
       matrix:
         include:
-          - name: Linux
-            os: ubuntu-22.04
-            pluginval-binary: ./pluginval
+          #          - name: Linux
+          #            os: ubuntu-22.04
+          #            pluginval-binary: ./pluginval
+
           - name: macOS
             os: macos-14
             pluginval-binary: pluginval.app/Contents/MacOS/pluginval
@@ -63,27 +63,27 @@ jobs:
           sudo apt-get update && sudo apt install libasound2-dev libx11-dev libxinerama-dev libxext-dev libfreetype6-dev libwebkit2gtk-4.0-dev libglu1-mesa-dev xvfb ninja-build
           sudo /usr/bin/Xvfb $DISPLAY &
 
-      - name: Cache IPP (Windows)
-        if: runner.os == 'Windows'
-        id: cache-ipp
-        uses: actions/cache@v4
-        with:
-          key: ipp-v5
-          path: C:\Program Files (x86)\Intel
-
-      - name: Install IPP (Windows)
-        if: (runner.os == 'Windows') && (steps.cache-ipp.outputs.cache-hit != 'true')
-        run: |
-          curl --output oneapi.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b4adec02-353b-4144-aa21-f2087040f316/w_ipp_oneapi_p_2021.11.0.533_offline.exe
-          ./oneapi.exe -s -x -f oneapi
-          ./oneapi/bootstrapper.exe -s -c --action install --components=intel.oneapi.win.ipp.devel --eula=accept -p=NEED_VS2022_INTEGRATION=1 --log-dir=.
-
-      - name: Save IPP cache (even on CI fail)
-        if: runner.os == 'Windows' && (steps.cache-ipp.outputs.cache-hit != 'true')
-        uses: actions/cache/save@v4
-        with:
-          path: C:\Program Files (x86)\Intel
-          key: ipp-v5
+      #      - name: Cache IPP (Windows)
+      #        if: runner.os == 'Windows'
+      #        id: cache-ipp
+      #        uses: actions/cache@v4
+      #        with:
+      #          key: ipp-v5
+      #          path: C:\Program Files (x86)\Intel
+      #
+      #      - name: Install IPP (Windows)
+      #        if: (runner.os == 'Windows') && (steps.cache-ipp.outputs.cache-hit != 'true')
+      #        run: |
+      #          curl --output oneapi.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b4adec02-353b-4144-aa21-f2087040f316/w_ipp_oneapi_p_2021.11.0.533_offline.exe
+      #          ./oneapi.exe -s -x -f oneapi
+      #          ./oneapi/bootstrapper.exe -s -c --action install --components=intel.oneapi.win.ipp.devel --eula=accept -p=NEED_VS2022_INTEGRATION=1 --log-dir=.
+      #
+      #      - name: Save IPP cache (even on CI fail)
+      #        if: runner.os == 'Windows' && (steps.cache-ipp.outputs.cache-hit != 'true')
+      #        uses: actions/cache/save@v4
+      #        with:
+      #          path: C:\Program Files (x86)\Intel
+      #          key: ipp-v5
 
       - name: Install Ninja (Windows)
         if: runner.os == 'Windows'
@@ -106,14 +106,24 @@ jobs:
           submodules: true # Get JUCE populated
 
       - name: Cache the build
-        uses: mozilla-actions/sccache-action@v0.0.5
+        uses: mozilla-actions/sccache-action@v0.0.4
 
       - name: Import Certificates (macOS)
         uses: apple-actions/import-codesign-certs@v3
         if: ${{ matrix.name == 'macOS' }}
         with:
+          keychain-password: ${{ secrets.KEYCHAIN_PASS }}
           p12-file-base64: ${{ secrets.DEV_ID_APP_CERT }}
           p12-password: ${{ secrets.DEV_ID_APP_PASSWORD }}
+
+      - name: Import INST Certificates (macOS)
+        uses: apple-actions/import-codesign-certs@v3
+        if: ${{ matrix.name == 'macOS' }}
+        with:
+          keychain-password: ${{ secrets.KEYCHAIN_PASS }}
+          create-keychain: false
+          p12-file-base64: ${{ secrets.DEV_ID_INST_CERT }}
+          p12-password: ${{ secrets.DEV_ID_INST_PASS }}
 
       - name: Configure
         run: cmake -B ${{ env.BUILD_DIR }} -G Ninja -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE}} -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache ${{ matrix.extra-flags }} .
@@ -121,13 +131,13 @@ jobs:
       - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.BUILD_TYPE }} --parallel 4
 
-      - name: Test
-        working-directory: ${{ env.BUILD_DIR }}
-        run: ./Tests
+      #      - name: Test
+      #        working-directory: ${{ env.BUILD_DIR }}
+      #        run: ./Tests
 
-      - name: Run Benchmarks
-        working-directory: ${{ env.BUILD_DIR }}
-        run: ./Benchmarks
+      #      - name: Run Benchmarks
+      #        working-directory: ${{ env.BUILD_DIR }}
+      #        run: ./Benchmarks
 
       - name: Read in .env from CMake # see GitHubENV.cmake
         run: |
@@ -156,16 +166,19 @@ jobs:
           # Each plugin must be code signed
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.VST3_PATH }}" --deep --strict --options=runtime --timestamp
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.AU_PATH }}" --deep --strict --options=runtime --timestamp
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.STANDALONE_PATH }}" --deep --strict --options=runtime --timestamp
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v packaging/factoryPresets/500-FLAT.preset --deep --strict --options=runtime --timestamp
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v packaging/factoryPresets/AES.preset --deep --strict --options=runtime --timestamp
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "packaging/factoryPresets/Blumlein 300.preset" --deep --strict --options=runtime --timestamp
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v packaging/factoryPresets/Flat.preset --deep --strict --options=runtime --timestamp
 
       - name: Add Custom Icons (macOS)
         if: ${{ matrix.name == 'macOS' }}
         run: |
           # add the icns as its own icon resource (meta!)
-          sips -i packaging/pamplejuce.icns
+          sips -i packaging/playBackEQ.icns
 
           # Grab the resource, put in tempfile
-          DeRez -only icns packaging/pamplejuce.icns > /tmp/icons
+          DeRez -only icns packaging/playBackEQ.icns > /tmp/icons
 
           # Stuff the resource into the strange Icon? file's resource fork
           Rez -a /tmp/icons -o "${{ env.VST3_PATH }}/Icon"$'\r'
@@ -175,27 +188,52 @@ jobs:
           SetFile -a C "${{ env.VST3_PATH }}"
           SetFile -a C "${{ env.AU_PATH }}"
 
-      - name: Create DMG, Notarize and Staple (macOS)
+      - name : Create PKG file
         if: ${{ matrix.name == 'macOS' }}
+        id : create_pkg
+        #        working-directory : ${{github.workspace}}/packaging
         run: |
-          # workaround for https://github.com/LinusU/node-appdmg/issues/234
-          python3 -m pip install setuptools --break-system-packages
-          npm install -g appdmg
-          mkdir -p packaging/dmg
+          
+          pkgbuild --component ${{ env.AU_PATH }}  \
+            --install-location /Library/Audio/Plug-Ins/Components \
+            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
+            --identifier com.obscureSignals.component.pkg
+            ./${{env.PROJECT_NAME}}-AU-unsigned.pkg
+          
+          pkgbuild --component ${{ env.VST3_PATH }}  \
+            --install-location /Library/Audio/Plug-Ins/VST3 \
+            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
+            --identifier com.obscureSignals.vst3.pkg
+            ./${{env.PROJECT_NAME}}-VST3-unsigned.pkg
+          
+          productbuild --package ./${{env.PROJECT_NAME}}-AU-unsigned.pkg \
+            --package ./${{env.PROJECT_NAME}}-VST3-unsigned.pkg \
+            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
+            ./${{env.PROJECT_NAME}}-universal.pkg
 
-          # Create directories for the dmg symlinks
-          sudo mkdir -m 755 -p /Library/Audio/Plug-Ins/Components && sudo mkdir -m 755 -p /Library/Audio/Plug-Ins/VST3
-          ln -s /Library/Audio/Plug-Ins/Components "packaging/dmg/Your Mac's Component folder"
-          ln -s /Library/Audio/Plug-Ins/VST3 "packaging/dmg/Your Mac's VST3 folder"
-          mv "${{ env.VST3_PATH }}" packaging/dmg
-          mv "${{ env.AU_PATH }}" packaging/dmg
-          mv "${{ env.STANDALONE_PATH }}" packaging/dmg
+          echo "PKGNAME=${{env.PROJECT_NAME}}-universal.pkg" >> "$GITHUB_OUTPUT"
 
-          # Run appdmg to create the .dmg
-          cd packaging && appdmg dmg.json "${{ env.ARTIFACT_NAME}}.dmg"
-          codesign -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" --timestamp -i ${{ env.BUNDLE_ID }} --force "${{ env.ARTIFACT_NAME }}.dmg"
-          xcrun notarytool submit "${{ env.ARTIFACT_NAME }}.dmg" --apple-id ${{ secrets.NOTARIZATION_USERNAME }} --password ${{ secrets.NOTARIZATION_PASSWORD }} --team-id ${{ secrets.TEAM_ID }} --wait
-          xcrun stapler staple "${{ env.ARTIFACT_NAME }}.dmg"
+      - name : Notarize PKG
+        if: ${{ matrix.name == 'macOS' }}
+        #        working-directory : ${{github.workspace}}/packaging
+        run : |
+          echo "---Notarize---"
+          xcrun notarytool submit "${{steps.create_pkg.outputs.PKGNAME }}" \
+            --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" \
+            --password "${{ secrets.NOTARIZATION_PASSWORD }}" \
+            --team-id "${{ secrets.TEAM_ID }}" --wait
+          echo "---Notarized---"
+          
+          echo "---Staple---"
+          xcrun stapler staple "${{steps.create_pkg.outputs.PKGNAME }}"
+          echo "---Stapled---"
+
+      - name: Upload plugin
+        if: ${{ matrix.name == 'macOS' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{steps.create_pkg.outputs.PKGNAME }}
+          path: ${{steps.create_pkg.outputs.PKGNAME }}
 
       - name: Zip
         if: ${{ matrix.name == 'Linux' }}
@@ -207,32 +245,6 @@ jobs:
         run: |
           iscc "packaging\installer.iss"
           mv "packaging/Output/${{ env.ARTIFACT_NAME }}.exe" "${{ env.ARTIFACTS_PATH }}/"
-
-      - name: Codesign with Azure Trusted Signing
-        if: ${{ matrix.name == 'Windows' }}
-        uses: azure/trusted-signing-action@v0.4.0
-        with:
-          # The Azure Active Directory tenant (directory) ID.
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-
-          # The client (application) ID of an App Registration in the tenant.
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-
-          # A client secret that was generated for the App Registration.
-          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-
-          # The Code Signing Account endpoint. The URI value must have a URI that aligns to the region your Code Signing Account and Certificate Profile you are specifying were created in during the setup of these resources.
-          endpoint: ${{ secrets.AZURE_ENDPOINT }}
-
-          # The Code Signing Account name.
-          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
-
-          # The Certificate Profile name.
-          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-
-          # This signs all exes inside the folder
-          files-folder: ${{ env.ARTIFACTS_PATH }}
-          files-folder-filter: exe
 
       - name: Upload Exe (Windows)
         if: ${{ matrix.name == 'Windows' }}
@@ -248,12 +260,12 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}.zip
           path: "${{ env.ARTIFACTS_PATH }}/${{ env.ARTIFACT_NAME }}.zip"
 
-      - name: Upload DMG (macOS)
-        if: ${{ matrix.name == 'macOS' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.ARTIFACT_NAME }}.dmg
-          path: packaging/${{ env.ARTIFACT_NAME }}.dmg
+  #      - name: Upload DMG (macOS)
+  #        if: ${{ matrix.name == 'macOS' }}
+  #        uses: actions/upload-artifact@v4
+  #        with:
+  #          name: ${{ env.ARTIFACT_NAME }}.dmg
+  #          path: packaging/${{ env.ARTIFACT_NAME }}.dmg
 
   release:
     if: contains(github.ref, 'tags/v')
