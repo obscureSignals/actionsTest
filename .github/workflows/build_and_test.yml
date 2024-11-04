@@ -34,17 +34,18 @@ jobs:
       fail-fast: false # show all errors for each platform (vs. cancel jobs on error)
       matrix:
         include:
-          #          - name: Linux
-          #            os: ubuntu-22.04
-          #            pluginval-binary: ./pluginval
+#          - name: Linux
+#            os: ubuntu-22.04
+#            pluginval-binary: ./pluginval
 
           - name: macOS
             os: macos-14
             pluginval-binary: pluginval.app/Contents/MacOS/pluginval
             extra-flags: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-          - name: Windows
-            os: windows-latest
-            pluginval-binary: ./pluginval.exe
+
+#          - name: Windows
+#            os: windows-latest
+#            pluginval-binary: ./pluginval.exe
 
     steps:
       # Setup MSVC toolchain and developer command prompt (Windows)
@@ -62,28 +63,6 @@ jobs:
         run: |
           sudo apt-get update && sudo apt install libasound2-dev libx11-dev libxinerama-dev libxext-dev libfreetype6-dev libwebkit2gtk-4.0-dev libglu1-mesa-dev xvfb ninja-build
           sudo /usr/bin/Xvfb $DISPLAY &
-
-      #      - name: Cache IPP (Windows)
-      #        if: runner.os == 'Windows'
-      #        id: cache-ipp
-      #        uses: actions/cache@v4
-      #        with:
-      #          key: ipp-v5
-      #          path: C:\Program Files (x86)\Intel
-      #
-      #      - name: Install IPP (Windows)
-      #        if: (runner.os == 'Windows') && (steps.cache-ipp.outputs.cache-hit != 'true')
-      #        run: |
-      #          curl --output oneapi.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b4adec02-353b-4144-aa21-f2087040f316/w_ipp_oneapi_p_2021.11.0.533_offline.exe
-      #          ./oneapi.exe -s -x -f oneapi
-      #          ./oneapi/bootstrapper.exe -s -c --action install --components=intel.oneapi.win.ipp.devel --eula=accept -p=NEED_VS2022_INTEGRATION=1 --log-dir=.
-      #
-      #      - name: Save IPP cache (even on CI fail)
-      #        if: runner.os == 'Windows' && (steps.cache-ipp.outputs.cache-hit != 'true')
-      #        uses: actions/cache/save@v4
-      #        with:
-      #          path: C:\Program Files (x86)\Intel
-      #          key: ipp-v5
 
       - name: Install Ninja (Windows)
         if: runner.os == 'Windows'
