@@ -142,30 +142,62 @@ jobs:
       - name: Codesign (macOS)
         if: ${{ matrix.name == 'macOS' }}
         run: |
-          # Each plugin must be code signed
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.VST3_PATH }}" --deep --strict --options=runtime --timestamp
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.AU_PATH }}" --deep --strict --options=runtime --timestamp
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v packaging/factoryPresets/500-FLAT.preset --deep --strict --options=runtime --timestamp
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v packaging/factoryPresets/AES.preset --deep --strict --options=runtime --timestamp
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "packaging/factoryPresets/Blumlein 300.preset" --deep --strict --options=runtime --timestamp
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v packaging/factoryPresets/Flat.preset --deep --strict --options=runtime --timestamp
+          
+          TMPDIR="./installer-tmp"
+          mkdir -p $TMPDIR
+          
+          VST3="playBackEQ.vst3"
+          AU="playBackEQ.component"
+          
+          OUTPUT_BASE_FILENAME="playBackEQ-macOS-$VERSION"
+          
+          workdir=$TMPDIR/VST3
+          mkdir -p $workdir
+          
+          cp -r ~/Library/Audio/Plug-Ins/VST3/$VST3 "$workdir"
+          ls -l "$workdir"
+          
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$VST3"
+          codesign -vvv "$workdir/$VST3"
+  
+          pkgbuild --sign "${{ secrets.DEV_ID_INST_CERT }}" --root "$workdir" --identifier "com.obscureSignals.playBackEQ.vst3.pkg" --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/playBackEQ_VST3.pkg" || exit 1
+          pkgutil --check-signature "$TMPDIR/playBackEQ_VST3.pkg"
+          
+          workdir=$TMPDIR/"AU"
+          mkdir -p "$workdir"
+          
+          cp -r ~/Library/Audio/Plug-Ins/Components/$AU "$workdir"
+          ls -l "$workdir"
+          
+          echo "Signing as a bundle"
+          codesign --force -s "$MAC_SIGNING_CERT" -o runtime --deep "$workdir/$AU"
+          codesign -vvv "$workdir/$AU"
+          
+          pkgbuild --sign "$MAC_INSTALLING_CERT" --root "$workdir" --identifier "com.obscureSignals.playBackEQ.component.pkg" --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/playBackEQ_AU.pkg" || exit 1
+          pkgutil --check-signature "$TMPDIR/playBackEQ_AU.pkg"
+          
+          rm -rf $workdir
 
-      - name: Add Custom Icons (macOS)
-        if: ${{ matrix.name == 'macOS' }}
-        run: |
-          # add the icns as its own icon resource (meta!)
-          sips -i packaging/playBackEQ.icns
+#          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.VST3_PATH }}" --deep --strict --options=runtime --timestamp
+#          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.AU_PATH }}" --deep --strict --options=runtime --timestamp
 
-          # Grab the resource, put in tempfile
-          DeRez -only icns packaging/playBackEQ.icns > /tmp/icons
 
-          # Stuff the resource into the strange Icon? file's resource fork
-          Rez -a /tmp/icons -o "${{ env.VST3_PATH }}/Icon"$'\r'
-          Rez -a /tmp/icons -o "${{ env.AU_PATH }}/Icon"$'\r'
-
-          # Set custom icon attribute
-          SetFile -a C "${{ env.VST3_PATH }}"
-          SetFile -a C "${{ env.AU_PATH }}"
+#      - name: Add Custom Icons (macOS)
+#        if: ${{ matrix.name == 'macOS' }}
+#        run: |
+#          # add the icns as its own icon resource (meta!)
+#          sips -i packaging/playBackEQ.icns
+#
+#          # Grab the resource, put in tempfile
+#          DeRez -only icns packaging/playBackEQ.icns > /tmp/icons
+#
+#          # Stuff the resource into the strange Icon? file's resource fork
+#          Rez -a /tmp/icons -o "${{ env.VST3_PATH }}/Icon"$'\r'
+#          Rez -a /tmp/icons -o "${{ env.AU_PATH }}/Icon"$'\r'
+#
+#          # Set custom icon attribute
+#          SetFile -a C "${{ env.VST3_PATH }}"
+#          SetFile -a C "${{ env.AU_PATH }}"
 
       - name : Create PKG file
         if: ${{ matrix.name == 'macOS' }}
