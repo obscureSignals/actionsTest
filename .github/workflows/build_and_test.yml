@@ -161,7 +161,7 @@ jobs:
           codesign -vvv "$workdir/$VST3"
   
           pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
-          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}.pkg"
+          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg"
           
           workdir=$TMPDIR/"AU"
           mkdir -p "$workdir"
