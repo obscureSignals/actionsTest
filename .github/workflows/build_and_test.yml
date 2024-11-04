@@ -146,10 +146,10 @@ jobs:
           TMPDIR="./installer-tmp"
           mkdir -p $TMPDIR
           
-          VST3="playBackEQ.vst3"
-          AU="playBackEQ.component"
+          VST3="${{ env.PRODUCT_NAME }}.vst3" 
+          AU="${{ env.PRODUCT_NAME }}.component"
           
-          OUTPUT_BASE_FILENAME="playBackEQ-macOS-$VERSION"
+          OUTPUT_BASE_FILENAME="${{ env.PRODUCT_NAME }}.-macOS-$VERSION"
           
           workdir=$TMPDIR/VST3
           mkdir -p $workdir
@@ -160,8 +160,8 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$VST3"
           codesign -vvv "$workdir/$VST3"
   
-          pkgbuild --sign "${{ secrets.DEV_ID_INST_CERT }}" --root "$workdir" --identifier "com.obscureSignals.playBackEQ.vst3.pkg" --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/playBackEQ_VST3.pkg" || exit 1
-          pkgutil --check-signature "$TMPDIR/playBackEQ_VST3.pkg"
+          pkgbuild --sign "${{ secrets.DEV_ID_INST_CERT }}" --root "$workdir" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.vst3.pkg" --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
+          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}.pkg"
           
           workdir=$TMPDIR/"AU"
           mkdir -p "$workdir"
@@ -173,8 +173,8 @@ jobs:
           codesign --force -s "$MAC_SIGNING_CERT" -o runtime --deep "$workdir/$AU"
           codesign -vvv "$workdir/$AU"
           
-          pkgbuild --sign "$MAC_INSTALLING_CERT" --root "$workdir" --identifier "com.obscureSignals.playBackEQ.component.pkg" --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/playBackEQ_AU.pkg" || exit 1
-          pkgutil --check-signature "$TMPDIR/playBackEQ_AU.pkg"
+          pkgbuild --sign "$MAC_INSTALLING_CERT" --root "$workdir" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.component.pkg" --version "$VERSION" --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
+          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg"
           
           rm -rf $workdir
 
