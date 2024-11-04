@@ -1,0 +1,5 @@
+#!/bin/bash
+#rsync -r --delete "/tmp/SXT/Surge XT" /Library/Application\ Support/
+#chown -R $USER:staff "/Library/Application Support/playBackEQ/factoryPresets/"
+mv "/tmp/playBackEQ/factoryPresets/" ~/Library/Application\ Support/playBackEQ/
+rm -rf "/tmp/playBackEQ"

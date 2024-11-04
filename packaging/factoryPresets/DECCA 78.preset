@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Parameters presetName="DECCA 78" version="1.0.0">
+  <PARAM id="Bass Boost Enabled" value="1.0"/>
+  <PARAM id="Bass Shelf Enabled" value="0.0"/>
+  <PARAM id="Bass Turnover Frequency" value="300.0"/>
+  <PARAM id="High-Pass Slope" value="0.0"/>
+  <PARAM id="Low-Pass Slope" value="0.0"/>
+  <PARAM id="Treble Attenuation Enabled" value="1.0"/>
+  <PARAM id="Treble Turnover Frequency" value="6366.197723675814"/>
+</Parameters>

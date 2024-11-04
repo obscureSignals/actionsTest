@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Parameters presetName="RIAA" version="1.0.0">
+  <PARAM id="Bass Boost Enabled" value="1.0"/>
+  <PARAM id="Bass Shelf Enabled" value="1.0"/>
+  <PARAM id="Bass Turnover Frequency" value="500.4872424273439"/>
+  <PARAM id="High-Pass Slope" value="0.0"/>
+  <PARAM id="Low-Pass Slope" value="0.0"/>
+  <PARAM id="Treble Attenuation Enabled" value="1.0"/>
+  <PARAM id="Bass Shelf Frequency" value="50.048724242734380"/>
+  <PARAM id="Treble Turnover Frequency" value="2122.065907891938"/>
+</Parameters>

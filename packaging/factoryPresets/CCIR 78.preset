@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Parameters presetName="CCIR 78" version="1.0.0">
+  <PARAM id="Bass Boost Enabled" value="1.0"/>
+  <PARAM id="Bass Shelf Enabled" value="0.0"/>
+  <PARAM id="Bass Turnover Frequency" value="353.6776513153230e"/>
+  <PARAM id="High-Pass Slope" value="0.0"/>
+  <PARAM id="Low-Pass Slope" value="0.0"/>
+  <PARAM id="Treble Attenuation Enabled" value="1.0"/>
+  <PARAM id="Treble Turnover Frequency" value="3183.098861837907"/>
+</Parameters>
