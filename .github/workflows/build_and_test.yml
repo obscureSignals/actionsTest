@@ -261,6 +261,8 @@ jobs:
           mv "${TMPDIR}/${OUTPUT_BASE_FILENAME}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
           
+          TARGET_DIR="packaging"
+          
           if [[ -f "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg" ]]; then
           rm "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
           fi
