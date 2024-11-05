@@ -203,7 +203,7 @@ jobs:
 
       - name : Create distribution file
         if: ${{ matrix.name == 'macOS' }}
-        id : create_pkg
+        id : create_distro_file
         #        working-directory : ${{github.workspace}}/packaging
         run: |
           
