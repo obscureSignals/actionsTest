@@ -132,6 +132,8 @@ jobs:
           echo "AUV3_PATH=$ARTIFACTS_PATH/AUv3/${{ env.PRODUCT_NAME }}.appex" >> $GITHUB_ENV
           echo "STANDALONE_PATH=$ARTIFACTS_PATH/Standalone/${{ env.PRODUCT_NAME }}.app" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=${{ env.PRODUCT_NAME }}-${{ env.VERSION }}-${{ matrix.name }}" >> $GITHUB_ENV
+          echo "OUTPUT_BASE_FILENAME="${{ env.PRODUCT_NAME }}.-macOS-$VERSION" >> $GITHUB_ENV
+          echo "OUTPUT_DIR="packaging" >> $GITHUB_ENV
 
       - name: Pluginval
         run: |
@@ -148,9 +150,7 @@ jobs:
           
           VST3="${{ env.PRODUCT_NAME }}.vst3" 
           AU="${{ env.PRODUCT_NAME }}.component"
-          
-          OUTPUT_BASE_FILENAME="${{ env.PRODUCT_NAME }}.-macOS-$VERSION"
-          
+                    
           workdir=$TMPDIR/VST3
           mkdir -p $workdir
           
@@ -179,7 +179,7 @@ jobs:
           rm -rf $workdir
           
           # We have to install the factory presets in a temp location and then move it to the user location with the postinstall script.
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "packaging/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "packaging/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
           
           echo --- Sub Packages Created ---
           ls -l "${TMPDIR}"
@@ -252,20 +252,20 @@ jobs:
           
           pushd ${TMPDIR} || exit
           echo "Building SIGNED PKG"
-          productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources packaging "$OUTPUT_BASE_FILENAME.pkg"
+          productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.OUTPUT_BASE_FILENAME }} 
           
           popd || exit
           
-          SetFile -a C "${TMPDIR}/${OUTPUT_BASE_FILENAME}.pkg"
+          SetFile -a C "${TMPDIR}/${{ env.OUTPUT_BASE_FILENAME }}.pkg"
           mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
-          mv "${TMPDIR}/${OUTPUT_BASE_FILENAME}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          mv "${TMPDIR}/${{ env.OUTPUT_BASE_FILENAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
                     
-          if [[ -f "packaging/$OUTPUT_BASE_FILENAME.dmg" ]]; then
-          rm "packaging/$OUTPUT_BASE_FILENAME.dmg"
+          if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg" ]]; then
+          rm "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
           fi
-          hdiutil create /tmp/tmp.dmg -ov -volname "$OUTPUT_BASE_FILENAME" -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
-          hdiutil convert /tmp/tmp.dmg -format UDZO -o "packaging/$OUTPUT_BASE_FILENAME.dmg"
+          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.OUTPUT_BASE_FILENAME }} -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
+          hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
 
 #          pkgbuild --component ${{ env.AU_PATH }}  \
 #            --install-location /Library/Audio/Plug-Ins/Components \
@@ -291,11 +291,11 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run : |
           
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "packaging/$OUTPUT_BASE_FILENAME.dmg"
-          codesign -vvv "$ARTIFACTS_PATH/$OUTPUT_BASE_FILENAME.dmg"
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
+          codesign -vvv "$ARTIFACTS_PATH/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
           
-          xcrun notarytool submit "$ARTIFACTS_PATH/$OUTPUT_BASE_FILENAME.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
-          xcrun stapler staple "$ARTIFACTS_PATH/${OUTPUT_BASE_FILENAME}.dmg"
+          xcrun notarytool submit "$ARTIFACTS_PATH/${{ env.OUTPUT_BASE_FILENAME }}.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
+          xcrun stapler staple "$ARTIFACTS_PATH/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
 
       - name: Upload plugin
         if: ${{ matrix.name == 'macOS' }}
@@ -312,8 +312,8 @@ jobs:
       - name: Generate Installer
         if: ${{ matrix.name == 'Windows' }}
         run: |
-          iscc "packaging\installer.iss"
-          mv "packaging/Output/${{ env.ARTIFACT_NAME }}.exe" "${{ env.ARTIFACTS_PATH }}/"
+          iscc "${{ env.OUTPUT_DIR }}\installer.iss"
+          mv "${{ env.OUTPUT_DIR }}/Output/${{ env.ARTIFACT_NAME }}.exe" "${{ env.ARTIFACTS_PATH }}/"
 
       - name: Upload Exe (Windows)
         if: ${{ matrix.name == 'Windows' }}
@@ -334,7 +334,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}.dmg
-          path: packaging/${{ env.ARTIFACT_NAME }}.dmg
+          path: ${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg
 
   release:
     if: contains(github.ref, 'tags/v')
