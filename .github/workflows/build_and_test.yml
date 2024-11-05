@@ -1,8 +1,8 @@
-name: actionsTest
+name: Pamplejuce
 
 on:
   workflow_dispatch: # lets you run a build from the UI
-  push:
+#  push:
 #  pull_request:
 
 # When pushing new commits, cancel any running builds on that branch
@@ -134,7 +134,6 @@ jobs:
           echo "ARTIFACT_NAME=${{ env.PRODUCT_NAME }}-${{ env.VERSION }}-${{ matrix.name }}" >> $GITHUB_ENV
           echo "OUTPUT_BASE_FILENAME=${{ env.PRODUCT_NAME }}-macOS-$VERSION" >> $GITHUB_ENV
           echo "OUTPUT_DIR=packaging" >> $GITHUB_ENV
-          echo "TMPDIR=./installer-tmp" >> $GITHUB_ENV
 
       - name: Pluginval
         run: |
@@ -146,12 +145,13 @@ jobs:
         if: ${{ matrix.name == 'macOS' }}
         run: |
           
-          mkdir -p ${{ env.TMPDIR }}
+          TMPDIR="./installer-tmp"
+          mkdir -p $TMPDIR
           
           VST3="${{ env.PRODUCT_NAME }}.vst3" 
           AU="${{ env.PRODUCT_NAME }}.component"
                     
-          workdir=${{ env.TMPDIR }}/VST3
+          workdir=$TMPDIR/VST3
           mkdir -p $workdir
           
           cp -r ~/Library/Audio/Plug-Ins/VST3/$VST3 "$workdir"
@@ -160,10 +160,10 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$VST3"
           codesign -vvv "$workdir/$VST3"
   
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
-          pkgutil --check-signature "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_VST3.pkg"
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
+          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg"
           
-          workdir=${{ env.TMPDIR }}/"AU"
+          workdir=$TMPDIR/"AU"
           mkdir -p "$workdir"
           
           cp -r ~/Library/Audio/Plug-Ins/Components/$AU "$workdir"
@@ -173,16 +173,16 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$AU"
           codesign -vvv "$workdir/$AU"
           
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/Components/" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
-          pkgutil --check-signature "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_AU.pkg"
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
+          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg"
           
           rm -rf $workdir
           
           # We have to install the factory presets in a temp location and then move it to the user location with the postinstall script.
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${{ env.TMPDIR }}/factoryPresets.pkg
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
           
           echo --- Sub Packages Created ---
-          ls -l ${{ env.TMPDIR }}
+          ls -l "${TMPDIR}"
 
 #      - name: Add Custom Icons (macOS)
 #        if: ${{ matrix.name == 'macOS' }}
@@ -206,7 +206,9 @@ jobs:
         id : create_distro_file
         #        working-directory : ${{github.workspace}}/packaging
         run: |
-                    
+          
+          TMPDIR="./installer-tmp"
+          
           VST3_PKG_REF='<pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} VST3\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_VST3.pkg</pkg-ref>"
@@ -215,7 +217,7 @@ jobs:
           AU_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg"/>'
           AU_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} Audio Unit\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_AU.pkg</pkg-ref>"
           
-          cat > ${{ env.TMPDIR }}/distribution.xml << XMLEND
+          cat > $TMPDIR/distribution.xml << XMLEND
           <?xml version="1.0" encoding="utf-8"?>
           <installer-gui-script minSpecVersion="1">
           <title>${{ env.PRODUCT_NAME }} ${VERSION}</title>
@@ -250,21 +252,21 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run: |
           
-          pushd ${{ env.TMPDIR }} || exit
+          pushd ${TMPDIR} || exit
           echo "Building SIGNED PKG"
           productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.ARTIFACT_NAME }}.pkg 
           
           popd || exit
           
-          SetFile -a C "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg"
-          mkdir "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
-          mv "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
+          SetFile -a C "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg"
+          mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          mv "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
                     
           if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg" ]]; then
           rm "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
           fi
-          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}/"
+          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
           hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
 
 #          pkgbuild --component ${{ env.AU_PATH }}  \
