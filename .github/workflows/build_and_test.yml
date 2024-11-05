@@ -252,20 +252,20 @@ jobs:
           
           pushd ${TMPDIR} || exit
           echo "Building SIGNED PKG"
-          productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.OUTPUT_BASE_FILENAME }}.pkg 
+          productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.ARTIFACT_NAME }}.pkg 
           
           popd || exit
           
-          SetFile -a C "${TMPDIR}/${{ env.OUTPUT_BASE_FILENAME }}.pkg"
+          SetFile -a C "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg"
           mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
-          mv "${TMPDIR}/${{ env.OUTPUT_BASE_FILENAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          mv "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
                     
-          if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg" ]]; then
-          rm "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
+          if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg" ]]; then
+          rm "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
           fi
-          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.OUTPUT_BASE_FILENAME }} -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
-          hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
+          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
+          hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
 
 #          pkgbuild --component ${{ env.AU_PATH }}  \
 #            --install-location /Library/Audio/Plug-Ins/Components \
@@ -291,18 +291,11 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run : |
           
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
-          codesign -vvv "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
+          codesign -vvv "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
           
-          xcrun notarytool submit "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
-          xcrun stapler staple "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
-
-      - name: Upload plugin
-        if: ${{ matrix.name == 'macOS' }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{steps.create_pkg.outputs.PKGNAME }}
-          path: ${{steps.create_pkg.outputs.PKGNAME }}
+          xcrun notarytool submit "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
+          xcrun stapler staple "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
 
       - name: Zip
         if: ${{ matrix.name == 'Linux' }}
