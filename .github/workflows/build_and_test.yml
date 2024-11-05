@@ -179,10 +179,10 @@ jobs:
           rm -rf $workdir
           
           # We have to install the factory presets in a temp location and then move it to the user location with the postinstall script.
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${{ env.TMPDIR }}/factoryPresets.pkg
           
           echo --- Sub Packages Created ---
-          ls -l "${TMPDIR}"
+          ls -l ${{ env.TMPDIR }}
 
 #      - name: Add Custom Icons (macOS)
 #        if: ${{ matrix.name == 'macOS' }}
@@ -250,21 +250,21 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run: |
           
-          pushd ${TMPDIR} || exit
+          pushd ${{ env.TMPDIR }} || exit
           echo "Building SIGNED PKG"
           productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.ARTIFACT_NAME }}.pkg 
           
           popd || exit
           
-          SetFile -a C "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg"
-          mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
-          mv "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          SetFile -a C "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg"
+          mkdir "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
+          mv "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
                     
           if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg" ]]; then
           rm "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
           fi
-          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
+          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}/"
           hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
 
 #          pkgbuild --component ${{ env.AU_PATH }}  \
