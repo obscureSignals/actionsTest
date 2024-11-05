@@ -22,7 +22,7 @@ defaults:
   run:
     shell: bash
 
-# jobs are run in paralell on different machines
+# jobs are run in parallel on different machines
 # all steps run in series
 jobs:
   build_and_test:
@@ -177,10 +177,12 @@ jobs:
           pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg"
           
           rm -rf $workdir
-
-#          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.VST3_PATH }}" --deep --strict --options=runtime --timestamp
-#          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION}}" -v "${{ env.AU_PATH }}" --deep --strict --options=runtime --timestamp
-
+          
+          # We have to install the factory presets in a temp location and then move it to the user location with the postinstall script.
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "packaging/factoryPresets" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "packaging/ResourcesPackageScript" --install-location "/tmp/playBackEQ/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
+          
+          echo --- Sub Packages Created ---
+          ls -l "${TMPDIR}"
 
 #      - name: Add Custom Icons (macOS)
 #        if: ${{ matrix.name == 'macOS' }}
