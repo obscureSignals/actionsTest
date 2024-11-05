@@ -260,14 +260,12 @@ jobs:
           mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           mv "${TMPDIR}/${OUTPUT_BASE_FILENAME}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
-          
-          TARGET_DIR="packaging"
-          
-          if [[ -f "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg" ]]; then
-          rm "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
+                    
+          if [[ -f "packaging/$OUTPUT_BASE_FILENAME.dmg" ]]; then
+          rm "packaging/$OUTPUT_BASE_FILENAME.dmg"
           fi
           hdiutil create /tmp/tmp.dmg -ov -volname "$OUTPUT_BASE_FILENAME" -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
-          hdiutil convert /tmp/tmp.dmg -format UDZO -o "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
+          hdiutil convert /tmp/tmp.dmg -format UDZO -o "packaging/$OUTPUT_BASE_FILENAME.dmg"
 
 #          pkgbuild --component ${{ env.AU_PATH }}  \
 #            --install-location /Library/Audio/Plug-Ins/Components \
@@ -293,7 +291,7 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run : |
           
-          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "packaging/$OUTPUT_BASE_FILENAME.dmg"
           codesign -vvv "$ARTIFACTS_PATH/$OUTPUT_BASE_FILENAME.dmg"
           
           xcrun notarytool submit "$ARTIFACTS_PATH/$OUTPUT_BASE_FILENAME.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
