@@ -292,10 +292,10 @@ jobs:
         run : |
           
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
-          codesign -vvv "$ARTIFACTS_PATH/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
+          codesign -vvv "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
           
-          xcrun notarytool submit "$ARTIFACTS_PATH/${{ env.OUTPUT_BASE_FILENAME }}.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
-          xcrun stapler staple "$ARTIFACTS_PATH/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
+          xcrun notarytool submit "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
+          xcrun stapler staple "${{ env.OUTPUT_DIR }}/${{ env.OUTPUT_BASE_FILENAME }}.dmg"
 
       - name: Upload plugin
         if: ${{ matrix.name == 'macOS' }}
