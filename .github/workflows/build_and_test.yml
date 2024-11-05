@@ -160,7 +160,7 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$VST3"
           codesign -vvv "$workdir/$VST3"
   
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
           pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg"
           
           workdir=$TMPDIR/"AU"
@@ -173,13 +173,13 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$AU"
           codesign -vvv "$workdir/$AU"
           
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.component.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
           pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg"
           
           rm -rf $workdir
           
           # We have to install the factory presets in a temp location and then move it to the user location with the postinstall script.
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "packaging/factoryPresets" --identifier "com.obscureSignals.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "packaging/ResourcesPackageScript" --install-location "/tmp/playBackEQ/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "packaging/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "packaging/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
           
           echo --- Sub Packages Created ---
           ls -l "${TMPDIR}"
@@ -201,45 +201,101 @@ jobs:
 #          SetFile -a C "${{ env.VST3_PATH }}"
 #          SetFile -a C "${{ env.AU_PATH }}"
 
+      - name : Create distribution file
+        if: ${{ matrix.name == 'macOS' }}
+        id : create_pkg
+        #        working-directory : ${{github.workspace}}/packaging
+        run: |
+          
+          VST3_PKG_REF='<pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
+          VST3_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
+          VST3_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} VST3\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_VST3.pkg</pkg-ref>"
+          
+          AU_PKG_REF='<pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg"/>'
+          AU_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg"/>'
+          AU_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} Audio Unit\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_AU.pkg</pkg-ref>"
+          
+          cat > $TMPDIR/distribution.xml << XMLEND
+          <?xml version="1.0" encoding="utf-8"?>
+          <installer-gui-script minSpecVersion="1">
+          <title>${{ env.PRODUCT_NAME }} ${VERSION}</title>
+          <license file="License.txt" />
+          <readme file="Readme.rtf" />
+          
+          ${AU_PKG_REF}
+          ${VST3_PKG_REF}
+          
+          <pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg"/>
+          <options require-scripts="false" customize="always" hostArchitectures="x86_64,arm64" rootVolumeOnly="true"/>
+          <domains enable_anywhere="false" enable_currentUserHome="false" enable_localSystem="true"/>
+          <choices-outline>
+          ${AU_CHOICE}
+          ${VST3_CHOICE}
+          
+          <line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg"/>
+          </choices-outline>
+          ${VST3_CHOICE_DEF}
+          ${AU_CHOICE_DEF}
+          
+          <choice id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" visible="true" enabled="false" selected="true" title="Install Factory Presets">
+          <pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg"/>
+          </choice>
+          <pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" version="${VERSION}" onConclusion="none">factoryPresets.pkg</pkg-ref>
+          </installer-gui-script>
+          XMLEND
+
       - name : Create PKG file
         if: ${{ matrix.name == 'macOS' }}
         id : create_pkg
         #        working-directory : ${{github.workspace}}/packaging
         run: |
           
-          pkgbuild --component ${{ env.AU_PATH }}  \
-            --install-location /Library/Audio/Plug-Ins/Components \
-            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
-            --identifier com.obscureSignals.component.pkg
-            ./${{env.PROJECT_NAME}}-AU-unsigned.pkg
+          pushd ${TMPDIR} || exit
+          echo "Building SIGNED PKG"
+          productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources packaging "$OUTPUT_BASE_FILENAME.pkg"
           
-          pkgbuild --component ${{ env.VST3_PATH }}  \
-            --install-location /Library/Audio/Plug-Ins/VST3 \
-            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
-            --identifier com.obscureSignals.vst3.pkg
-            ./${{env.PROJECT_NAME}}-VST3-unsigned.pkg
+          popd || exit
           
-          productbuild --package ./${{env.PROJECT_NAME}}-AU-unsigned.pkg \
-            --package ./${{env.PROJECT_NAME}}-VST3-unsigned.pkg \
-            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
-            ./${{env.PROJECT_NAME}}-universal.pkg
+          SetFile -a C "${TMPDIR}/${OUTPUT_BASE_FILENAME}.pkg"
+          mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          mv "${TMPDIR}/${OUTPUT_BASE_FILENAME}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          # create a DMG if required
+          
+          if [[ -f "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg" ]]; then
+          rm "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
+          fi
+          hdiutil create /tmp/tmp.dmg -ov -volname "$OUTPUT_BASE_FILENAME" -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
+          hdiutil convert /tmp/tmp.dmg -format UDZO -o "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
 
-          echo "PKGNAME=${{env.PROJECT_NAME}}-universal.pkg" >> "$GITHUB_OUTPUT"
+#          pkgbuild --component ${{ env.AU_PATH }}  \
+#            --install-location /Library/Audio/Plug-Ins/Components \
+#            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
+#            --identifier com.${{ env.COMPANY_NAME }}.component.pkg
+#            ./${{env.PROJECT_NAME}}-AU-unsigned.pkg
+#
+#          pkgbuild --component ${{ env.VST3_PATH }}  \
+#            --install-location /Library/Audio/Plug-Ins/VST3 \
+#            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
+#            --identifier com.${{ env.COMPANY_NAME }}.vst3.pkg
+#            ./${{env.PROJECT_NAME}}-VST3-unsigned.pkg
+#
+#          productbuild --package ./${{env.PROJECT_NAME}}-AU-unsigned.pkg \
+#            --package ./${{env.PROJECT_NAME}}-VST3-unsigned.pkg \
+#            --sign "${{secrets.DEVELOPER_ID_INSTALLER}}" \
+#            ./${{env.PROJECT_NAME}}-universal.pkg
+#
+#          echo "PKGNAME=${{env.PROJECT_NAME}}-universal.pkg" >> "$GITHUB_OUTPUT"
 
       - name : Notarize PKG
         if: ${{ matrix.name == 'macOS' }}
         #        working-directory : ${{github.workspace}}/packaging
         run : |
-          echo "---Notarize---"
-          xcrun notarytool submit "${{steps.create_pkg.outputs.PKGNAME }}" \
-            --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" \
-            --password "${{ secrets.NOTARIZATION_PASSWORD }}" \
-            --team-id "${{ secrets.TEAM_ID }}" --wait
-          echo "---Notarized---"
           
-          echo "---Staple---"
-          xcrun stapler staple "${{steps.create_pkg.outputs.PKGNAME }}"
-          echo "---Stapled---"
+          codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" --timestamp "${TARGET_DIR}/$OUTPUT_BASE_FILENAME.dmg"
+          codesign -vvv "$ARTIFACTS_PATH/$OUTPUT_BASE_FILENAME.dmg"
+          
+          xcrun notarytool submit "$ARTIFACTS_PATH/$OUTPUT_BASE_FILENAME.dmg" --apple-id "${{ secrets.NOTARIZATION_USERNAME }}" --team-id "${{ secrets.TEAM_ID }}" --password "${{ secrets.NOTARIZATION_PASSWORD }}" --wait
+          xcrun stapler staple "$ARTIFACTS_PATH/${OUTPUT_BASE_FILENAME}.dmg"
 
       - name: Upload plugin
         if: ${{ matrix.name == 'macOS' }}
@@ -273,12 +329,12 @@ jobs:
           name: ${{ env.ARTIFACT_NAME }}.zip
           path: "${{ env.ARTIFACTS_PATH }}/${{ env.ARTIFACT_NAME }}.zip"
 
-  #      - name: Upload DMG (macOS)
-  #        if: ${{ matrix.name == 'macOS' }}
-  #        uses: actions/upload-artifact@v4
-  #        with:
-  #          name: ${{ env.ARTIFACT_NAME }}.dmg
-  #          path: packaging/${{ env.ARTIFACT_NAME }}.dmg
+      - name: Upload DMG (macOS)
+        if: ${{ matrix.name == 'macOS' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}.dmg
+          path: packaging/${{ env.ARTIFACT_NAME }}.dmg
 
   release:
     if: contains(github.ref, 'tags/v')
