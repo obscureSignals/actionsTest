@@ -259,9 +259,9 @@ jobs:
           
           popd || exit
           
-          SetFile -a C "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg"
-          mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
-          mv "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          SetFile -a C "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg"
+          mkdir "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
+          mv "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
                     
           if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg" ]]; then
