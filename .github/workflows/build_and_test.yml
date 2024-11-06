@@ -182,7 +182,7 @@ jobs:
           pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${{ env.TEMPDIR }}/factoryPresets.pkg
           
           echo --- Sub Packages Created ---
-          ls -l ${{ env.TEMPDIR }}
+          ls -l "${{ env.TEMPDIR }}"
 
 #      - name: Add Custom Icons (macOS)
 #        if: ${{ matrix.name == 'macOS' }}
