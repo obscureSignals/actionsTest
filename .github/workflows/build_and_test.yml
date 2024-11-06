@@ -134,6 +134,7 @@ jobs:
           echo "ARTIFACT_NAME=${{ env.PRODUCT_NAME }}-${{ env.VERSION }}-${{ matrix.name }}" >> $GITHUB_ENV
           echo "OUTPUT_BASE_FILENAME=${{ env.PRODUCT_NAME }}-macOS-$VERSION" >> $GITHUB_ENV
           echo "OUTPUT_DIR=packaging" >> $GITHUB_ENV
+          echo "TMPDIR=./installer-tmp" >> $GITHUB_ENV
 
       - name: Pluginval
         run: |
