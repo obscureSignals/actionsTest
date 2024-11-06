@@ -207,9 +207,6 @@ jobs:
         id : create_distro_file
         #        working-directory : ${{github.workspace}}/packaging
         run: |
-
-          TMPDIR="./installer-tmp"
-
           VST3_PKG_REF='<pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} VST3\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_VST3.pkg</pkg-ref>"
