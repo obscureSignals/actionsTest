@@ -208,7 +208,7 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run: |
 
-#          TMPDIR="./installer-tmp"
+          TMPDIR="./installer-tmp"
 
           VST3_PKG_REF='<pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
