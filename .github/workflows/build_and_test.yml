@@ -153,7 +153,7 @@ jobs:
           VST3="${{ env.PRODUCT_NAME }}.vst3" 
           AU="${{ env.PRODUCT_NAME }}.component"
                     
-          workdir=$TMPDIR/VST3
+          workdir=${{ env.TMPDIR }}/VST3
           mkdir -p $workdir
           
           cp -r ~/Library/Audio/Plug-Ins/VST3/$VST3 "$workdir"
@@ -162,10 +162,10 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$VST3"
           codesign -vvv "$workdir/$VST3"
   
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
-          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_VST3.pkg"
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/VST3" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_VST3.pkg" || exit 1
+          pkgutil --check-signature "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_VST3.pkg"
           
-          workdir=$TMPDIR/"AU"
+          workdir=${{ env.TMPDIR }}/AU
           mkdir -p "$workdir"
           
           cp -r ~/Library/Audio/Plug-Ins/Components/$AU "$workdir"
@@ -175,16 +175,16 @@ jobs:
           codesign --force -s "${{ secrets.DEVELOPER_ID_APPLICATION }}" -o runtime --deep "$workdir/$AU"
           codesign -vvv "$workdir/$AU"
           
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/Components/" "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
-          pkgutil --check-signature "$TMPDIR/${{ env.PRODUCT_NAME }}_AU.pkg"
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "$workdir" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg" --version ${{ env.VERSION }} --install-location "/Library/Audio/Plug-Ins/Components/" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_AU.pkg" || exit 1
+          pkgutil --check-signature "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}_AU.pkg"
           
           rm -rf $workdir
           
           # We have to install the factory presets in a temp location and then move it to the user location with the postinstall script.
-          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${TMPDIR}/factoryPresets.pkg
+          pkgbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --root "${{ env.OUTPUT_DIR }}/factoryPresets" --identifier "com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.resources.pkg" --version ${{ env.VERSION }} --scripts "${{ env.OUTPUT_DIR }}/ResourcesPackageScript" --install-location "/tmp/${{ env.PRODUCT_NAME }}/factoryPresets/" ${{ env.TMPDIR }}/factoryPresets.pkg
           
           echo --- Sub Packages Created ---
-          ls -l "${TMPDIR}"
+          ls -l ${{ env.TMPDIR }}
 
 #      - name: Add Custom Icons (macOS)
 #        if: ${{ matrix.name == 'macOS' }}
