@@ -218,7 +218,7 @@ jobs:
           AU_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg"/>'
           AU_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} Audio Unit\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_AU.pkg</pkg-ref>"
           
-          cat > $TMPDIR/distribution.xml << XMLEND
+          cat > ${{ env.TMPDIR }}/distribution.xml << XMLEND
           <?xml version="1.0" encoding="utf-8"?>
           <installer-gui-script minSpecVersion="1">
           <title>${{ env.PRODUCT_NAME }} ${VERSION}</title>
