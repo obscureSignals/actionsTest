@@ -207,7 +207,9 @@ jobs:
         id : create_distro_file
         #        working-directory : ${{github.workspace}}/packaging
         run: |
-                    
+          
+          TMPDIR="./installer-tmp"
+          
           VST3_PKG_REF='<pkg-ref id="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg"/>'
           VST3_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} VST3\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.vst3.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_VST3.pkg</pkg-ref>"
@@ -216,7 +218,7 @@ jobs:
           AU_CHOICE='<line choice="com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg"/>'
           AU_CHOICE_DEF="<choice id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" visible=\"true\" start_selected=\"true\" title=\"${{ env.PRODUCT_NAME }} Audio Unit\"><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\"/></choice><pkg-ref id=\"com.${{ env.COMPANY_NAME }}.${{ env.PRODUCT_NAME }}.component.pkg\" version=\"${VERSION}\" onConclusion=\"none\">${{ env.PRODUCT_NAME }}_AU.pkg</pkg-ref>"
           
-          cat > ${{ env.TMPDIR }}/distribution.xml << XMLEND
+          cat > $TMPDIR/distribution.xml << XMLEND
           <?xml version="1.0" encoding="utf-8"?>
           <installer-gui-script minSpecVersion="1">
           <title>${{ env.PRODUCT_NAME }} ${VERSION}</title>
@@ -251,23 +253,21 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run: |
           
-          TMPDIR="./installer-tmp"
-          
-          pushd ${{ env.TMPDIR }} || exit
+          pushd ${TMPDIR} || exit
           echo "Building SIGNED PKG"
           productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.ARTIFACT_NAME }}.pkg 
           
           popd || exit
           
-          SetFile -a C "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg"
-          mkdir "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
-          mv "${{ env.TMPDIR }}/${{ env.ARTIFACT_NAME }}.pkg" "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}"
+          SetFile -a C "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg"
+          mkdir "${TMPDIR}/${{ env.PRODUCT_NAME }}"
+          mv "${TMPDIR}/${{ env.ARTIFACT_NAME }}.pkg" "${TMPDIR}/${{ env.PRODUCT_NAME }}"
           # create a DMG if required
                     
           if [[ -f "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg" ]]; then
           rm "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
           fi
-          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${{ env.TMPDIR }}/${{ env.PRODUCT_NAME }}/"
+          hdiutil create /tmp/tmp.dmg -ov -volname ${{ env.ARTIFACT_NAME }} -fs HFS+ -srcfolder "${TMPDIR}/${{ env.PRODUCT_NAME }}/"
           hdiutil convert /tmp/tmp.dmg -format UDZO -o "${{ env.OUTPUT_DIR }}/${{ env.ARTIFACT_NAME }}.dmg"
 
 #          pkgbuild --component ${{ env.AU_PATH }}  \
