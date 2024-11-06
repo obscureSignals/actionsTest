@@ -147,7 +147,7 @@ jobs:
         if: ${{ matrix.name == 'macOS' }}
         run: |
           
-#          TMPDIR="./installer-tmp"
+          TMPDIR="./installer-tmp"
           mkdir -p $TMPDIR
           
           VST3="${{ env.PRODUCT_NAME }}.vst3" 
