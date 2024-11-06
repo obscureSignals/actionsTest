@@ -148,7 +148,7 @@ jobs:
         run: |
           
 #          TMPDIR="./installer-tmp"
-          mkdir -p ${{ env.TMPDIR }}
+          mkdir -p "${{ env.TMPDIR }}"
           
           VST3="${{ env.PRODUCT_NAME }}.vst3" 
           AU="${{ env.PRODUCT_NAME }}.component"
