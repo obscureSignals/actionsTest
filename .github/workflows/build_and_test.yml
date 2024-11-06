@@ -251,6 +251,8 @@ jobs:
         #        working-directory : ${{github.workspace}}/packaging
         run: |
           
+          TMPDIR="./installer-tmp"
+          
           pushd ${{ env.TMPDIR }} || exit
           echo "Building SIGNED PKG"
           productbuild --sign "${{ secrets.DEVELOPER_ID_INSTALLER }}" --distribution "distribution.xml" --package-path "." --resources ${{ env.OUTPUT_DIR }} ${{ env.ARTIFACT_NAME }}.pkg 
